@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Acadia Facility Closures · Farallon Research</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+<style>
+:root{
+  --navy:#243D5A;          /* Sheps headline navy */
+  --ink:#142532;           /* Sheps body text */
+  --slate:#4A5A6A;
+  --rust:#B85014; --gold:#B0842B; --gold-dk:#7C5E1E;
+  --eblue:#4A6C99;         /* era: earlier period (Sheps blue) */
+  --egold:#E8C33D;         /* era: recent period (Sheps gold) */
+  --link:#15497B;
+  --line:#DDDDDD; --line-2:#E9ECEF; --panel:#F0F2F4; --panel-2:#F6F7F8;
+  --sans:'Helvetica Neue',Arial,Helvetica,sans-serif;
+  --wrap:1160px;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;font-family:var(--sans);color:var(--ink);background:#fff;font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased}
+h1,h2,h3,h4{font-family:var(--sans);color:var(--navy);margin:0;font-weight:500}
+a{color:var(--rust);text-decoration:none}
+.wrap{max-width:var(--wrap);margin:0 auto;padding:0 34px}
+
+/* ===== MASTHEAD ===== */
+.mast{position:sticky;top:0;z-index:1500;background:rgba(255,255,255,.97);backdrop-filter:saturate(140%) blur(4px);border-bottom:1px solid var(--line)}
+.mast .wrap{display:flex;align-items:center;justify-content:space-between;height:72px;gap:24px}
+.mast img{height:36px;width:auto;display:block}
+.mast nav{display:flex;gap:28px}
+.mast nav a{font-size:12px;font-weight:700;letter-spacing:.11em;text-transform:uppercase;color:var(--navy);white-space:nowrap;cursor:pointer}
+.mast nav a:hover{color:var(--rust)}
+.mast nav a.tag{color:var(--slate);font-weight:400;letter-spacing:.06em}
+
+/* ===== LEAD / COUNTS ===== */
+.lead{padding:26px 0 6px}
+.crumb{font-size:12px;color:var(--slate);letter-spacing:.02em}
+.ptitle{font-size:clamp(24px,3vw,31px);font-weight:500;color:var(--navy);margin:10px 0 0}
+.counts{max-width:920px;margin:0 auto;padding:34px 24px 4px;text-align:center}
+.counts .big{font-size:clamp(26px,3.6vw,38px);font-weight:500;color:var(--navy);line-height:1.15;margin:0}
+.counts .sub{font-size:clamp(16px,1.8vw,20px);font-weight:400;color:var(--navy);margin:8px 0 0}
+.counts .big2{font-size:clamp(20px,2.6vw,28px);font-weight:700;color:var(--navy);margin:26px 0 0;line-height:1.2}
+.counts .sub2{font-size:clamp(15px,1.8vw,18px);font-weight:400;color:var(--navy);margin:7px 0 0}
+.counts .fnotes{max-width:820px;margin:26px auto 4px;text-align:left}
+.counts .fn{display:flex;gap:11px;font-size:13px;color:var(--navy);font-weight:700;padding:5px 0;line-height:1.5}
+.counts .fn::before{content:'';flex:none;width:9px;height:9px;border:1.5px solid #9AA3AC;border-radius:50%;margin-top:5px}
+.counts .fn a{color:var(--link);font-weight:700}
+
+/* ===== SECTION TITLE ===== */
+.mtitle{font-size:clamp(20px,2.6vw,27px);font-weight:500;color:var(--navy);text-align:center;margin:40px 0 18px}
+
+/* ===== VIEW TABS (blue blocks) ===== */
+.tabs{display:flex;max-width:var(--wrap);margin:0 auto;padding:0 34px;gap:0}
+.tab{flex:1;appearance:none;border:none;border-right:1px solid #fff;background:#C6D6E7;color:#2B4058;
+  font-family:var(--sans);font-size:13px;font-weight:500;padding:13px 12px;cursor:pointer;line-height:1.25;text-align:center}
+.tab:last-child{border-right:none}
+.tab:hover{background:#B7CBE0}
+.tab.active{background:var(--eblue);color:#fff}
+
+/* ===== MAP + LEFT PANEL ===== */
+.mapouter{max-width:var(--wrap);margin:0 auto;padding:0 34px}
+.maprow{display:flex;border:1px solid #C9C9C9;position:relative;height:min(74vh,640px);min-height:520px}
+.mpanel{flex:none;width:250px;border-right:1px solid #C9C9C9;padding:14px 13px;background:#fff;overflow-y:auto}
+.pbox{border:1px solid #C9C9C9;padding:9px 11px 11px;margin-bottom:12px}
+.pbox .plab{font-size:12px;font-weight:700;color:var(--navy);margin:0 0 8px}
+.yr{font-size:12px;font-weight:400;color:var(--navy)}
+.yr .now{font-weight:700;font-size:15px}
+.slrow{display:flex;align-items:center;gap:10px;margin-top:8px}
+.pbtn{width:30px;height:30px;border-radius:50%;border:none;background:var(--navy);color:#fff;font-size:11px;cursor:pointer;flex:none;display:flex;align-items:center;justify-content:center}
+.pbtn:hover{background:var(--rust)}
+.mpanel input[type=range]{-webkit-appearance:none;appearance:none;flex:1;height:3px;background:#c9c9c9;cursor:pointer}
+.mpanel input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:13px;height:13px;background:var(--navy);border:2px solid #fff;box-shadow:0 0 0 1px var(--navy);cursor:pointer}
+.mpanel input[type=range]::-moz-range-thumb{width:11px;height:11px;background:var(--navy);border:2px solid #fff;cursor:pointer}
+.yrends{display:flex;justify-content:space-between;font-size:10.5px;color:var(--slate);margin-top:5px}
+.leg .lrow{display:flex;align-items:center;gap:9px;font-size:12px;color:var(--ink);padding:3px 0}
+.leg .sw{width:13px;height:13px;flex:none;border:1px solid rgba(0,0,0,.45)}
+.vbars{display:flex;align-items:flex-end;gap:4px;height:120px}
+.vcol{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end}
+.vcol .vn{font-size:9px;font-weight:700;color:var(--navy);margin-bottom:2px;font-variant-numeric:tabular-nums}
+.vcol .vb{width:100%;min-height:2px;background:var(--eblue)}
+.vcol .vb.gold{background:var(--egold)}
+.vcol .vy{font-size:9px;color:var(--slate);margin-top:4px}
+.vcol.future .vb,.vcol.future .vn{opacity:.28}
+#map{flex:1;height:100%;background:#eef2f5;z-index:0}
+.leaflet-container{font-family:var(--sans)}
+.loading{position:absolute;inset:0 0 0 250px;display:flex;align-items:center;justify-content:center;font-size:14px;color:var(--slate);z-index:5}
+.mapcap{max-width:var(--wrap);margin:0 auto;padding:11px 34px 0;font-size:13px;color:var(--slate)}
+.mapcap b{color:var(--navy);font-weight:700}
+
+/* ===== FOOTNOTE DEFINITIONS ===== */
+.fndefs{max-width:var(--wrap);margin:14px auto 0;padding:14px 34px 0;font-size:12.5px;color:var(--slate);line-height:1.6}
+.fndefs b{color:var(--navy)} .fndefs p{margin:0 0 5px}
+
+/* ===== ACCORDIONS (Bootstrap-panel style) ===== */
+.acc{max-width:var(--wrap);margin:40px auto 0;padding:0 34px}
+.acc .item{border:1px solid var(--line);margin-bottom:-1px;background:#fff}
+.acc .head{display:flex;justify-content:space-between;align-items:center;gap:16px;width:100%;text-align:left;
+  padding:13px 16px;cursor:pointer;background:var(--panel);border:none;font-family:var(--sans);font-size:14px;font-weight:700;color:var(--navy)}
+.acc .head:hover{background:#E7EBEF;color:var(--link)}
+.acc .ico{display:inline-block;font-size:18px;line-height:1;color:var(--slate);font-weight:400;transition:transform .2s;flex:none}
+.acc .item.open .ico{transform:rotate(45deg)}
+.acc .body{display:none;padding:14px 18px 22px}
+.acc .item.open .body{display:block}
+.acc .body p{font-size:14px;line-height:1.65;color:var(--ink);margin:0 0 12px;max-width:72em}
+.acc .body p b{color:var(--navy)}
+.acc .body h4{font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--navy);margin:20px 0 9px}
+.acc .verdict{display:inline-block;font-size:12px;font-weight:700;padding:5px 11px;border:1px solid #C9C6B5;color:var(--gold-dk);background:#F7F1E3;margin-bottom:13px}
+.acc .quote{border-left:3px solid var(--eblue);padding:3px 0 3px 15px;margin:6px 0 13px;font-size:15px;color:var(--navy);font-style:italic;line-height:1.5}
+.acc .quote .cite{display:block;font-style:normal;font-size:12px;color:var(--slate);margin-top:6px}
+.fw{display:grid;grid-template-columns:120px 1fr;gap:7px 16px;margin:5px 0 8px;font-size:13px}
+.fw .w{font-weight:700;color:var(--navy)} .fw .w i{font-style:normal;color:var(--rust);margin-left:5px}
+.fw .t{color:var(--ink);line-height:1.5}
+.srcgrid{display:grid;grid-template-columns:1fr 1fr;gap:18px 40px;margin-top:8px}
+.srcgrid .src{border-top:2px solid var(--navy);padding-top:9px}
+.srcgrid .src .n{font-weight:700;font-size:13px;color:var(--navy);margin-bottom:3px}
+.srcgrid .src .t{font-size:12.5px;color:var(--slate);line-height:1.5}
+.dlbtn{display:inline-block;margin-top:4px;font-size:13.5px;font-weight:700;color:var(--link);border-bottom:1px solid rgba(21,73,123,.4);padding-bottom:1px}
+
+/* ===== SORTABLE TABLE ===== */
+.tblwrap{overflow-x:auto}
+table.ftbl{width:100%;border-collapse:collapse;font-size:12.5px}
+.ftbl th{font-size:11px;font-weight:700;color:#fff;background:var(--navy);text-align:left;padding:9px 11px;border-right:1px solid #38516d;cursor:pointer;white-space:nowrap;user-select:none}
+.ftbl th.n{text-align:right}
+.ftbl th:hover{background:#2C4A6B}
+.ftbl th .ar{font-size:9px;margin-left:3px}
+.ftbl td{padding:8px 11px;border-bottom:1px solid var(--line-2);color:var(--ink);vertical-align:top;white-space:nowrap}
+.ftbl td.n{text-align:right;font-variant-numeric:tabular-nums}
+.ftbl td.fac{font-weight:700;color:var(--navy)}
+.ftbl tbody tr:nth-child(even){background:#F6F8FA}
+.ftbl tbody tr{cursor:pointer}
+.ftbl tbody tr:hover{background:#EAF0F6}
+.ftbl .st{font-size:9px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:2px 7px;white-space:nowrap;color:#fff}
+.ftbl .st.cn{background:var(--rust)} .ftbl .st.co{background:var(--navy)} .ftbl .st.w{background:var(--gold)}
+.tblhint{font-size:12px;color:var(--slate);margin:10px 0 0}
+
+/* ===== FOOTER ===== */
+footer{background:var(--navy);color:#B9C6D6;margin-top:56px}
+footer .wrap{padding:40px 34px}
+footer img{height:32px;opacity:.96;margin-bottom:18px}
+footer .fr{display:flex;justify-content:space-between;gap:30px;flex-wrap:wrap;align-items:flex-end}
+footer p{margin:0;font-size:12px;line-height:1.7;color:#8FA1B5;max-width:52em}
+footer .copy{font-size:11.5px;color:#7C8EA3;white-space:nowrap}
+
+/* ===== MAP DOTS (filled circles, Sheps style) ===== */
+.mk{border-radius:50%;border:1px solid rgba(15,22,30,.65);box-shadow:0 0 2px rgba(0,0,0,.35);cursor:pointer;transition:transform .1s}
+.mk:hover{transform:scale(1.3)}
+.mk-ctc{border-radius:50%;background:rgba(31,122,102,.32);border:1.5px solid #1F7A66;box-shadow:none}
+.mk-ctc:hover{transform:scale(1.5)}
+
+/* ===== CTC TOGGLE ===== */
+.ctcbox{border-color:#BFD8D0;background:#F3F8F6}
+.ctctoggle{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:700;color:#1F5C4D;cursor:pointer;line-height:1.25}
+.ctctoggle input{width:14px;height:14px;accent-color:#1F7A66;cursor:pointer;flex:none}
+.ctcsub{font-size:10.5px;color:#4A5A6A;line-height:1.45;margin-top:7px}
+.ctcsub b{color:#1F5C4D}
+body.ctcmode .pbox.slbox,body.ctcmode .pbox.barbox{opacity:.35;pointer-events:none;filter:saturate(.35)}
+body.ctcmode #tabs{opacity:.4;pointer-events:none}
+
+/* ===== FACILITY CARD (popup) ===== */
+.leaflet-popup.fac-popup .leaflet-popup-content-wrapper{background:#fff;border-radius:2px;border-top:3px solid var(--rust);box-shadow:0 14px 40px rgba(20,34,54,.30);padding:0}
+.leaflet-popup.fac-popup.watch .leaflet-popup-content-wrapper{border-top-color:var(--gold)}
+.leaflet-popup.fac-popup .leaflet-popup-content{margin:0;width:440px !important;font-family:var(--sans);color:var(--ink);line-height:1.45}
+.leaflet-popup.fac-popup .leaflet-popup-tip{background:#fff}
+.leaflet-popup.fac-popup a.leaflet-popup-close-button{color:var(--navy);font-size:18px;width:32px;height:32px;padding:7px 9px 0 0;font-weight:400;opacity:.8}
+.leaflet-popup.fac-popup a.leaflet-popup-close-button:hover{color:var(--rust);opacity:1;background:none}
+.fac .fac-head{padding:14px 20px 11px}
+.fac .kick{display:inline-block;font-size:9px;font-weight:700;letter-spacing:.11em;text-transform:uppercase;padding:4px 8px;margin-bottom:9px;color:#fff}
+.fac .kick.closed{background:var(--rust)} .fac .kick.watch{background:var(--gold)} .fac .kick.ctc{background:#1F7A66}
+.fac .ctcnote{font-size:12px;color:var(--ink);line-height:1.55;margin:12px 0 2px}
+.fac .ctcnote b{color:#1F5C4D}
+.leaflet-popup.fac-popup.ctc .leaflet-popup-content-wrapper{border-top-color:#1F7A66}
+.leaflet-popup.fac-popup.ctc .leaflet-popup-content{width:300px !important}
+.fac .nm{font-size:18px;font-weight:700;color:var(--navy);line-height:1.16;margin:0;padding-right:22px}
+.fac .loc{font-size:12px;color:var(--navy);margin-top:6px;font-weight:700}
+.fac .loc .ty{font-weight:400}.fac .loc .ty::before{content:" · ";font-weight:400}
+.fac .fac-body{padding:0 20px 15px}
+.fac .hero{display:flex;align-items:baseline;flex-wrap:wrap;gap:0 7px;padding:9px 0 5px;border-top:1px solid #DDE2E6}
+.fac .hero .fig{font-size:33px;font-weight:700;color:var(--rust);line-height:.95}
+.fac .hero .fig.navy{color:var(--navy)}
+.fac .hero .figu{font-size:13px;font-weight:700;color:var(--navy)}
+.fac .hero .figc{flex-basis:100%;font-size:11px;color:var(--slate);font-weight:400;margin-top:4px;line-height:1.35}
+.fac .rows{margin:5px 0 0;padding:0}
+.fac .r{display:flex;gap:12px;padding:7px 0;border-top:1px solid #E6E9EC}
+.fac .r dt{flex:none;width:78px;margin:0;font-size:10px;font-weight:700;color:var(--navy);padding-top:1px;text-transform:uppercase;letter-spacing:.03em}
+.fac .r dd{margin:0;font-size:12px;color:var(--ink);line-height:1.45}
+.fac .r dd b{color:var(--navy);font-weight:700}
+.fac .comps{display:grid;grid-template-columns:1fr 1fr;gap:0 20px;margin:11px 0 2px}
+.fac .comp{padding:8px 0;border-top:1px solid #E6E9EC}
+.fac .comp:nth-child(-n+2){border-top:none}
+.fac .comp .ctop{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.fac .comp .cn{font-size:11.5px;font-weight:700;color:var(--navy)}
+.fac .comp .cs{font-size:12.5px;font-weight:700;color:var(--rust)}
+.fac .comp .cs i{font-style:normal;font-weight:700;color:var(--slate);font-size:10px}
+.fac .comp .cbar{height:4px;background:#E6E9EC;margin:6px 0 5px;overflow:hidden}
+.fac .comp .cbar>span{display:block;height:100%;background:var(--rust)}
+.fac .comp .cnote{font-size:10.5px;color:#4A443C;line-height:1.4}
+.fac .pull{margin:12px 0 2px;padding:2px 0 2px 13px;border-left:3px solid var(--rust);font-size:12.5px;line-height:1.5;color:var(--navy);font-weight:500}
+.fac.is-watch .pull{border-left-color:var(--gold)}
+.fac .sec{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin:17px 0 0;padding-bottom:7px;border-bottom:2px solid var(--navy);font-size:12px;font-weight:700;color:var(--navy)}
+.fac .sec .sc{font-size:10.5px;font-weight:700;color:var(--slate)}
+.fac .chron{list-style:none;margin:0;padding:0}
+.fac .ev{padding:9px 0;border-bottom:1px solid #EAEDF0}
+.fac .ev:last-child{border-bottom:none}
+.fac .eh{display:flex;align-items:center;gap:9px;margin-bottom:4px;flex-wrap:wrap}
+.fac .ev .ed{font-size:11px;font-weight:700;color:var(--navy)}
+.fac .tag{font-size:8.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:2px 6px;color:#fff}
+.fac .tag.rust{background:var(--rust)} .fac .tag.navy{background:var(--navy)}
+.fac .ev .es{margin:0 0 5px;font-size:11.5px;line-height:1.45;color:var(--ink)}
+.fac .ev a{font-size:11px;color:var(--link);font-weight:700;border-bottom:1px solid rgba(21,73,123,.4)}
+.fac .ev-none{list-style:none;color:var(--slate);font-size:12px;padding:10px 0}
+
+@media(max-width:820px){
+  .wrap{padding:0 20px}
+  .tabs{padding:0 20px;flex-wrap:wrap}
+  .tab{flex:1 1 45%}
+  .maprow{flex-direction:column;height:auto}
+  .mpanel{width:100%;border-right:none;border-bottom:1px solid #C9C9C9}
+  #map{height:440px}.loading{inset:auto 0 0 0;height:440px}
+  .srcgrid{grid-template-columns:1fr}
+  .mast nav{gap:15px}.mast nav a{font-size:11px}
+}
+@media(max-width:520px){
+  .leaflet-popup.fac-popup .leaflet-popup-content{width:80vw !important}
+  .fac .comps{grid-template-columns:1fr}.fac .comp:nth-child(-n+2){border-top:1px solid #E6E9EC}.fac .comp:first-child{border-top:none}
+  .fw{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<header class="mast">
+  <div class="wrap">
+    <img src="assets/farallon-logo.png" alt="Farallon Capital Management">
+    <nav>
+      <a href="#mapsec">The Map</a>
+      <a href="#acc-list" onclick="openAcc('acc-list')">The List</a>
+      <a href="#acc-method" onclick="openAcc('acc-method')">Methodology</a>
+      <a class="tag">Internal Research</a>
+    </nav>
+  </div>
+</header>
+
+<section class="lead">
+  <div class="wrap">
+    <div class="crumb">Farallon Research · Behavioral Health · Acadia Healthcare (NASDAQ: ACHC)</div>
+    <h1 class="ptitle">Acadia Facility Closures</h1>
+  </div>
+  <div class="counts" id="counts"></div>
+</section>
+
+<h2 class="mtitle" id="mapsec">Acadia Facility Closures Map, 2019 to Present</h2>
+<div class="tabs" id="tabs">
+  <button class="tab active" data-m="all">All facilities</button>
+  <button class="tab" data-m="era">Closures by era</button>
+  <button class="tab" data-m="news">Closures by news link</button>
+  <button class="tab" data-m="watch">Watch list</button>
+</div>
+<div class="mapouter">
+  <div class="maprow">
+    <div class="mpanel">
+      <div class="pbox slbox">
+        <div class="plab">Closure year</div>
+        <div class="yr">Through <span class="now" id="yrLbl">2026</span></div>
+        <div class="slrow"><button class="pbtn" id="play" aria-label="Play">▶</button>
+          <input type="range" id="slider" min="0" max="89" value="89" step="1" aria-label="Timeline"></div>
+        <div class="yrends"><span>2019</span><span>2026</span></div>
+      </div>
+      <div class="pbox">
+        <div class="plab" id="legTitle">All facilities</div>
+        <div class="leg" id="leg"></div>
+      </div>
+      <div class="pbox barbox">
+        <div class="plab">Number of closures by year</div>
+        <div class="vbars" id="bars"></div>
+      </div>
+      <div class="pbox ctcbox">
+        <label class="ctctoggle"><input type="checkbox" id="ctcToggle"> Comprehensive Treatment Centers</label>
+        <div class="ctcsub">Acadia's methadone / MAT growth engine. Toggle to show <b>just the CTC dots</b>: <b id="ctcCount">175</b> clinics, <b>zero closed</b> in this window.</div>
+      </div>
+    </div>
+    <div id="map"></div>
+    <div class="loading" id="loading">Loading Acadia facility map…</div>
+  </div>
+  <div class="mapcap" id="mapcap"></div>
+  <div class="fndefs">
+    <p><b>* News-linked:</b> a closure preceded by sustained local investigative coverage and regulatory action (a license action, decertification, or DOJ exposure).</p>
+    <p><b>** Other reason:</b> a closure with no established local-news link, such as a lease expiry, funding loss or service-line exit.</p>
+  </div>
+</div>
+
+<section class="acc" id="detail">
+  <div class="item">
+    <button class="head" onclick="this.parentElement.classList.toggle('open')">What counts as a facility closure? (click for definition) <span class="ico">+</span></button>
+    <div class="body" id="acc-def-body"></div>
+  </div>
+  <div class="item open" id="acc-list">
+    <button class="head" onclick="this.parentElement.classList.toggle('open')">Sortable list of Acadia facilities <span class="ico">+</span></button>
+    <div class="body">
+      <div class="tblwrap"><table class="ftbl" id="ftbl"></table></div>
+      <div class="tblhint">Click any column heading to sort. Click a row to open that facility on the map above.</div>
+    </div>
+  </div>
+  <div class="item" id="acc-method">
+    <button class="head" onclick="this.parentElement.classList.toggle('open')">Heat-score methodology &amp; sources <span class="ico">+</span></button>
+    <div class="body" id="acc-method-body"></div>
+  </div>
+  <div class="item">
+    <button class="head" onclick="this.parentElement.classList.toggle('open')">Facility closure data for download <span class="ico">+</span></button>
+    <div class="body">
+      <p>The full dataset (facilities, event timelines, sources and heat-score components) is available as a single JSON file, refreshed by a daily automated news sweep.</p>
+      <a class="dlbtn" href="data.json" download>Download data.json</a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <img src="assets/farallon-logo-white.png" alt="Farallon Capital Management">
+    <div class="fr">
+      <p>Compiled by Farallon research from public local press, WARN notices, state licensing actions and court records. Facility list is reconstructed and may be incomplete. For internal research and discussion only. This is not investment advice or a recommendation with respect to any security.</p>
+      <div class="copy">© Farallon Capital Management, L.L.C.<br><span id="footGen"></span></div>
+    </div>
+  </div>
+</footer>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+  integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script>
+const MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const MONTHS_L=['January','February','March','April','May','June','July','August','September','October','November','December'];
+const fmtMY=d=>{if(!d)return 'n/a';const[y,m]=d.split('-');return MONTHS_L[(+m)-1]+' '+y;};
+const fmtLong=d=>{if(!d)return 'n/a';const[y,m,day]=d.split('-');return MONTHS_L[(+m)-1]+' '+(+day||1)+', '+y;};
+const START_Y=2019, START_M=0, ERA_SPLIT=2022;
+const idxToDate=i=>new Date(START_Y, START_M+i+1, 0);
+const idxToYear=i=>START_Y+Math.floor((START_M+i)/12);
+const idxToLabel=i=>{const y=START_Y+Math.floor((START_M+i)/12),m=(START_M+i)%12;return MONTHS[m]+" "+y;};
+const C={eblue:'#4A6C99',egold:'#E8C33D',rust:'#B85014',navy:'#243D5A',gold:'#B0842B'};
+const CAT_TONE={Investigation:'rust',Citation:'rust',License:'rust',Lawsuit:'rust',Settlement:'navy',Closure:'navy'};
+const POPUP_OPTS={maxWidth:460,minWidth:300,maxHeight:392,autoPanPadding:[22,22],keepInView:true};
+const CTC_COLOR='#1F7A66';
+const LEGENDS={
+  all:{title:'All facilities',rows:[[C.rust,'News-linked closure*'],[C.navy,'Other closure**'],[C.gold,'On watch (dot size = heat)']]},
+  era:{title:'Closure era',rows:[[C.eblue,'2019 to 2022'],[C.egold,'2023 to 2026']]},
+  news:{title:'Closure category',rows:[[C.rust,'News-linked closure*'],[C.navy,'Other reason**']]},
+  watch:{title:'Watch list',rows:[[C.gold,'On watch (dot size = heat)']]},
+  ctc:{title:'Comprehensive Treatment Centers',rows:[[CTC_COLOR,'CTC methadone / MAT clinic']]}
+};
+let DATA, map, MARK=[], playTimer=null, MODE='all', SORT={col:'status',dir:1}, CTC_ON=false, CTCMARK=[];
+
+fetch('data.json').then(r=>r.json()).then(d=>{DATA=d;init(d);}).catch(e=>{
+  document.getElementById('loading').textContent='Could not load data.json. Open via the EXPLOR file viewer. ('+e+')';
+});
+
+function init(d){
+  document.getElementById('loading').remove();
+  document.getElementById('footGen').textContent='Data as of '+fmtLong(d.meta.generated||d.meta.windowEnd)+' · Internal research';
+
+  map=L.map('map',{zoomControl:true,scrollWheelZoom:false}).setView([39,-96],4);
+  L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Physical_Map/MapServer/tile/{z}/{y}/{x}',
+    {attribution:'Tiles &copy; Esri, U.S. National Park Service',maxZoom:8,maxNativeZoom:8}).addTo(map);
+  d.facilities.forEach(f=>{
+    const m=L.marker([f.lat,f.lon],{icon:makeDot('#B7C6D8',8)});
+    m.on('click',()=>openFac(m,f)); m._f=f; MARK.push(m);
+  });
+
+  const closed=d.facilities.filter(f=>f.status==='closed');
+  const linked=closed.filter(f=>f.newsLinked&&f.newsStrength>=2);
+  const other=closed.length-linked.length;
+  const watch=d.facilities.filter(f=>f.status==='watch');
+  const leads=closed.map(f=>f.leadTimeMonths).filter(v=>v!=null).sort((a,b)=>a-b);
+  const median=leads.length?(leads.length%2?leads[(leads.length-1)/2]:Math.round((leads[leads.length/2-1]+leads[leads.length/2])/2)):null;
+  document.getElementById('counts').innerHTML=`
+    <div class="big">${closed.length} Acadia facility closures since January 2019</div>
+    <div class="sub">${linked.length} news-linked* &nbsp;+&nbsp; ${other} other reason**</div>
+    <div class="big2">${watch.length} facilities on the watch list today</div>
+    <div class="sub2">a median ${median!=null?median+'-month':'n/a'} lead from first local report to closure among news-linked cases</div>
+    <div class="fnotes">
+      <div class="fn">Facilities are reconstructed from local press, WARN notices, state licensing actions and court records; Acadia does not name the facilities behind its published closure counts, so this list may be incomplete.</div>
+      <div class="fn">Opioid treatment centers draw heavy local criticism but have not closed in this window; high coverage there does not imply closure risk.</div>
+    </div>`;
+
+  const sl=document.getElementById('slider');
+  let _maxIdx=+sl.max; const _dates=[];
+  d.facilities.forEach(f=>(f.events||[]).forEach(e=>{if(e.date)_dates.push(e.date);}));
+  (d.companyWide||[]).forEach(e=>{if(e.date)_dates.push(e.date);});
+  if(d.meta&&d.meta.windowEnd)_dates.push(d.meta.windowEnd);
+  _dates.forEach(ds=>{const dt=new Date(ds);const idx=(dt.getFullYear()-START_Y)*12+(dt.getMonth()-START_M);if(idx>_maxIdx)_maxIdx=idx;});
+  sl.max=_maxIdx; sl.value=_maxIdx;
+  document.querySelector('.yrends').lastElementChild.textContent=idxToYear(_maxIdx);
+  sl.addEventListener('input',()=>{stopPlay();refresh();});
+  document.getElementById('play').addEventListener('click',togglePlay);
+  document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>{
+    document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+    t.classList.add('active'); MODE=t.dataset.m; setLegend(); refresh();
+  }));
+
+  const ctcN=(d.ctcNetwork||[]).length;
+  if(ctcN)document.getElementById('ctcCount').textContent=ctcN;
+  document.getElementById('ctcToggle').addEventListener('change',e=>{
+    CTC_ON=e.target.checked; document.body.classList.toggle('ctcmode',CTC_ON);
+    stopPlay(); setLegend(); refresh();
+  });
+
+  buildBars(closed); setLegend(); buildTable(); buildDef(d); buildMethod(d);
+  refresh();
+}
+
+function makeDot(bg,size){
+  return L.divIcon({className:'',html:`<div class="mk" style="width:${size}px;height:${size}px;background:${bg}"></div>`,
+    iconSize:[size,size],iconAnchor:[size/2,size/2],popupAnchor:[0,-Math.round(size/2)]});
+}
+function makeCTCdot(){
+  return L.divIcon({className:'',html:'<div class="mk mk-ctc" style="width:9px;height:9px"></div>',
+    iconSize:[9,9],iconAnchor:[4,4],popupAnchor:[0,-5]});
+}
+function ctcHTML(c){
+  const n=(DATA.ctcNetwork||[]).length;
+  return `<div class="fac is-ctc"><div class="fac-head"><div class="kick ctc">Comprehensive Treatment Center</div>`
+    +`<h3 class="nm">${c.name}</h3><div class="loc">${c.city?c.city+', ':''}${c.state}<span class="ty">Methadone / MAT clinic</span></div></div>`
+    +`<div class="fac-body"><p class="ctcnote">One of Acadia's <b>${n}</b> Comprehensive Treatment Centers. This is a context marker, not a tracked closure or watch facility. <b>Zero CTCs have closed</b> in the 2019 to 2026 window: the CTC line is Acadia's growth engine, drawing heavy criticism (NYT methadone-fraud reporting, a $105M verdict) without a single closure.</p></div></div>`;
+}
+function buildCTC(){
+  if(CTCMARK.length||!DATA.ctcNetwork)return;
+  CTCMARK=DATA.ctcNetwork.map(c=>{
+    const m=L.marker([c.lat,c.lon],{icon:makeCTCdot()});
+    m.bindPopup(ctcHTML(c),{className:'fac-popup ctc',maxWidth:300,minWidth:220,autoPanPadding:[22,22],keepInView:true});
+    return m;
+  });
+}
+function setLegend(){
+  const Lg=LEGENDS[CTC_ON?'ctc':MODE];
+  document.getElementById('legTitle').textContent=Lg.title;
+  document.getElementById('leg').innerHTML=Lg.rows.map(r=>`<div class="lrow"><span class="sw" style="background:${r[0]}"></span>${r[1]}</div>`).join('');
+}
+function buildBars(closed){
+  const yrs={}; for(let y=START_Y;y<=2026;y++)yrs[y]=0;
+  closed.forEach(f=>{if(f.closed){const y=+f.closed.slice(0,4);if(yrs[y]!=null)yrs[y]++;}});
+  const maxc=Math.max(1,...Object.values(yrs));
+  document.getElementById('bars').innerHTML=Object.keys(yrs).map(y=>{
+    const h=Math.round(yrs[y]/maxc*84), era=(+y<=ERA_SPLIT)?'':'gold';
+    return `<div class="vcol" data-y="${y}"><span class="vn">${yrs[y]}</span><span class="vb ${era}" style="height:${Math.max(h,yrs[y]?3:0)}px"></span><span class="vy">'${String(y).slice(2)}</span></div>`;
+  }).join('');
+}
+function updateBars(curY){document.querySelectorAll('#bars .vcol').forEach(c=>c.classList.toggle('future',+c.dataset.y>curY));}
+
+function refresh(){
+  const i=+document.getElementById('slider').value, T=idxToDate(i), y=idxToYear(i);
+  document.getElementById('yrLbl').textContent=y;
+
+  if(CTC_ON){
+    MARK.forEach(m=>{if(map.hasLayer(m))map.removeLayer(m);});
+    buildCTC(); CTCMARK.forEach(m=>{if(!map.hasLayer(m))m.addTo(map);});
+    const n=CTCMARK.length, states=new Set((DATA.ctcNetwork||[]).map(c=>c.state)).size;
+    document.getElementById('mapcap').innerHTML=`<b>${n}</b> Comprehensive Treatment Centers operating across <b>${states}</b> states. <b>Zero</b> closed in this window. Source: Acadia location finder.`;
+    return;
+  }
+  CTCMARK.forEach(m=>{if(map.hasLayer(m))map.removeLayer(m);});
+
+  let closedN=0, watchN=0;
+  MARK.forEach(m=>{
+    const f=m._f, isClosed=f.status==='closed', isWatch=f.status==='watch';
+    let vis=false,bg='#B7C6D8',size=8;
+    const closedVis=isClosed && f.closed && new Date(f.closed)<=T;
+    const watchVis=isWatch && f.firstNews && new Date(f.firstNews)<=T;
+    if(MODE==='watch'){
+      if(watchVis){vis=true;bg=C.gold;size=8+(f.watchScore/100)*11;watchN++;}
+    } else if(MODE==='all'){
+      if(closedVis){vis=true;size=10;bg=(f.newsLinked&&f.newsStrength>=2)?C.rust:C.navy;closedN++;}
+      else if(watchVis){vis=true;bg=C.gold;size=8+(f.watchScore/100)*11;watchN++;}
+    } else if(closedVis){
+      vis=true; size=10;
+      bg=(MODE==='era')?(+f.closed.slice(0,4)<=ERA_SPLIT?C.eblue:C.egold):((f.newsLinked&&f.newsStrength>=2)?C.rust:C.navy);
+      closedN++;
+    }
+    if(vis){ if(!map.hasLayer(m))m.addTo(map); m.setIcon(makeDot(bg,size)); }
+    else { if(map.hasLayer(m))map.removeLayer(m); }
+  });
+  let cap;
+  if(MODE==='watch') cap=`As of <b>${idxToLabel(i)}</b>: <b>${watchN}</b> facilities on watch.`;
+  else if(MODE==='all') cap=`As of <b>${idxToLabel(i)}</b>: <b>${closedN}</b> closed, <b>${watchN}</b> on watch.`;
+  else cap=`As of <b>${idxToLabel(i)}</b>: <b>${closedN}</b> facilities closed.`;
+  document.getElementById('mapcap').innerHTML=cap;
+  updateBars(y);
+}
+
+function togglePlay(){ playTimer?stopPlay():startPlay(); }
+function startPlay(){
+  const sl=document.getElementById('slider');
+  if(+sl.value>=+sl.max) sl.value=0;
+  document.getElementById('play').textContent='❚❚';
+  playTimer=setInterval(()=>{ if(+sl.value>=+sl.max){stopPlay();return;} sl.value=+sl.value+1; refresh(); },360);
+}
+function stopPlay(){ if(playTimer){clearInterval(playTimer);playTimer=null;} document.getElementById('play').textContent='▶'; }
+function openAcc(id){const el=document.getElementById(id);if(el)el.classList.add('open');}
+
+/* ---------- sortable table ---------- */
+function statusOrder(f){return f.status!=='closed'?2:((f.newsLinked&&f.newsStrength>=2)?0:1);}
+function statusTag(f){
+  if(f.status!=='closed') return '<span class="st w">On watch</span>';
+  return (f.newsLinked&&f.newsStrength>=2)?'<span class="st cn">Closed · news</span>':'<span class="st co">Closed · other</span>';
+}
+const COLS=[
+  {k:'name',t:'Facility',cls:'fac',get:f=>f.name},
+  {k:'city',t:'City',get:f=>f.city},{k:'state',t:'State',get:f=>f.state},{k:'type',t:'Type',get:f=>f.type},
+  {k:'status',t:'Status',num:f=>statusOrder(f),cell:f=>statusTag(f)},
+  {k:'announced',t:'Announced',num:f=>f.announced?+new Date(f.announced):0,cell:f=>f.announced?fmtMY(f.announced):'n/a'},
+  {k:'closed',t:'Closed',num:f=>f.closed?+new Date(f.closed):0,cell:f=>f.closed?fmtMY(f.closed):'n/a'},
+  {k:'lead',t:'Lead, mo',n:1,num:f=>f.leadTimeMonths!=null?f.leadTimeMonths:-1,cell:f=>f.leadTimeMonths!=null?f.leadTimeMonths:'n/a'},
+  {k:'news',t:'News-linked',num:f=>(f.newsLinked&&f.newsStrength>=2)?1:0,cell:f=>(f.newsLinked&&f.newsStrength>=2)?'Yes':'No'},
+  {k:'heat',t:'Heat',n:1,num:f=>f.watchScore!=null?f.watchScore:-1,cell:f=>f.watchScore!=null?f.watchScore:'n/a'},
+];
+function buildTable(){ renderTable(); }
+function renderTable(){
+  const col=COLS.find(c=>c.k===SORT.col);
+  const arr=DATA.facilities.slice().sort((a,b)=> col.num?(col.num(a)-col.num(b))*SORT.dir
+    :String(col.get(a)||'').localeCompare(String(col.get(b)||''))*SORT.dir);
+  const head='<thead><tr>'+COLS.map(c=>`<th class="${c.n?'n':''}" data-k="${c.k}">${c.t}${SORT.col===c.k?` <span class="ar">${SORT.dir>0?'▲':'▼'}</span>`:''}</th>`).join('')+'</tr></thead>';
+  const body='<tbody>'+arr.map(f=>'<tr data-nm="'+encodeURIComponent(f.name)+'">'+COLS.map(c=>{
+    const v=c.cell?c.cell(f):c.get(f); return `<td class="${c.cls||''}${c.n?' n':''}">${v}</td>`;
+  }).join('')+'</tr>').join('')+'</tbody>';
+  const t=document.getElementById('ftbl'); t.innerHTML=head+body;
+  t.querySelectorAll('th').forEach(th=>th.onclick=()=>{const k=th.dataset.k;if(SORT.col===k)SORT.dir*=-1;else{SORT.col=k;SORT.dir=1;}renderTable();});
+  t.querySelectorAll('tbody tr').forEach(tr=>tr.onclick=()=>{
+    const nm=decodeURIComponent(tr.dataset.nm), m=MARK.find(x=>x._f.name===nm);
+    if(!m)return;
+    if(CTC_ON){document.getElementById('ctcToggle').checked=false;CTC_ON=false;document.body.classList.remove('ctcmode');setLegend();}
+    if(MODE!=='all'){document.querySelector('.tab[data-m="all"]').click();}else{refresh();}
+    document.getElementById('mapsec').scrollIntoView({behavior:'smooth',block:'start'});
+    setTimeout(()=>{if(!map.hasLayer(m))m.addTo(map);openFac(m,m._f);},450);
+  });
+}
+
+/* ---------- accordion bodies ---------- */
+function buildDef(d){
+  document.getElementById('acc-def-body').innerHTML=
+    `<p>A <b>facility closure</b> is recorded when a specific, named Acadia behavioral-health facility permanently ceases operations at its location. Because Acadia reports only aggregate closure counts and does not name the facilities involved, each entry is reconstructed from local press, WARN layoff notices, state licensing actions and court records, and cross-checked where possible against company filings.</p>
+     <p>A closure is marked <b>news-linked</b> when it was preceded by sustained local investigative coverage together with regulatory action; otherwise it is recorded as an <b>other-reason</b> closure (a lease expiry, funding loss or service-line exit). Facilities still open but under active adverse coverage are carried on the <b>watch list</b> and scored 0 to 100 for closure risk.</p>`;
+}
+function buildMethod(d){
+  const src=(d.sources||[]).map(s=>`<div class="src"><div class="n">${s.label}</div><div class="t">${s.note}</div></div>`).join('');
+  document.getElementById('acc-method-body').innerHTML=`
+    <span class="verdict">${d.meta.verdict}</span>
+    <p><b>Thesis.</b> ${d.meta.thesis}</p>
+    <p>${d.meta.verdictDetail}</p>
+    <div class="quote">“When announcing the Options Behavioral Health closure, Acadia’s CEO attributed it in part to local news coverage hurting patient volumes.”<span class="cite">Mirror Indy / WFYI, September 2025</span></div>
+    <h4>Heat-score framework (0 to 100)</h4>
+    <div class="fw"><div class="w">Regulatory<i>35</i></div><div class="t">License action, CMS decertification or DOJ criminal exposure: the mechanism that forces closure. Desert Hills, DBI and Highland Ridge all faced license or decert actions before closing.</div></div>
+    <div class="fw"><div class="w">Coverage<i>25</i></div><div class="t">Sustained multi-outlet investigative series versus one-off stories. Mirror Indy, FOX 13 and Searchlight New Mexico drove measurable volume loss.</div></div>
+    <div class="fw"><div class="w">Recency<i>15</i></div><div class="t">Coverage escalating in the last six months scores highest. Options closed at the peak of its coverage cycle.</div></div>
+    <div class="fw"><div class="w">Facility type<i>15</i></div><div class="t">Youth psychiatric or residential scores 15 (highest closure rate); acute adult psych 12; residential 8; opioid treatment centers 0.</div></div>
+    <div class="fw"><div class="w">Litigation<i>10</i></div><div class="t">Criminal charges outweigh mass tort, which outweighs a single suit. Adds pressure but alone does not force closure.</div></div>
+    <p style="margin-top:14px">All eight news-linked closures in the window scored <b>51 or higher</b>. Rolling Hills (OK) has had patient deaths yet stays open; Desert Hills (NM) drew a state license revocation and was forced to close. Regulatory jeopardy is the tell, not the volume of bad press.</p>
+    <h4>Sources</h4><div class="srcgrid">${src}</div>
+    <p style="margin-top:16px;font-size:12.5px;color:var(--slate)">${d.internalNote||''}</p>`;
+}
+
+/* ---------- facility card ---------- */
+function strengthWord(s){return s>=3?'sustained, across multiple outlets':s>=2?'moderate local coverage':'limited coverage';}
+function facHTML(f){
+  const closed=f.status==='closed';
+  const kick=closed?`<div class="kick closed">Closed &middot; ${fmtMY(f.closed)}</div>`:`<div class="kick watch">On watch list</div>`;
+  let body='';
+  if(closed){
+    if(f.leadTimeMonths!=null) body+=`<div class="hero"><span class="fig">${f.leadTimeMonths}</span><span class="figu">month${f.leadTimeMonths===1?'':'s'}</span><span class="figc">from the first local report to closure</span></div>`;
+    body+=`<dl class="rows">`;
+    body+=`<div class="r"><dt>Timeline</dt><dd>Announced ${fmtMY(f.announced)}, closed <b>${fmtMY(f.closed)}</b>.</dd></div>`;
+    body+=`<div class="r"><dt>Coverage</dt><dd>${f.newsLinked&&f.newsStrength>=2?'Local coverage was '+strengthWord(f.newsStrength)+'.':'No sustained local coverage.'}</dd></div>`;
+    body+=`<div class="r"><dt>Reason</dt><dd>${f.statedReason||'Not disclosed.'}</dd></div></dl>`;
+  } else {
+    body+=`<div class="hero"><span class="fig navy">${f.watchScore}</span><span class="figu">/ 100</span><span class="figc">closure-risk score, back-tested against past closures</span></div>`;
+    if(f.heatComponents){
+      const hc=f.heatComponents;
+      const comp=[['Regulatory jeopardy',hc.regulatory],['Coverage intensity',hc.coverage],['Coverage recency',hc.recency],['Facility type',hc.facilityType],['Litigation',hc.litigation]];
+      body+=`<div class="comps">`+comp.map(c=>`<div class="comp"><div class="ctop"><span class="cn">${c[0]}</span><span class="cs">${c[1].score}<i>/${c[1].max}</i></span></div><div class="cbar"><span style="width:${(c[1].score/c[1].max)*100}%"></span></div><div class="cnote">${c[1].note}</div></div>`).join('')+`</div>`;
+    }
+    body+=`<dl class="rows"><div class="r"><dt>First report</dt><dd>${fmtMY(f.firstNews)}</dd></div></dl>`;
+  }
+  const finding=closed?f.headline:f.watchRationale;
+  const pull=finding?`<blockquote class="pull">${finding}</blockquote>`:'';
+  const evs=(f.events||[]).slice().sort((a,b)=>new Date(b.date)-new Date(a.date)).map(e=>{
+    const tone=CAT_TONE[e.category]||'navy';
+    return `<li class="ev"><div class="eh"><span class="ed">${fmtMY(e.date)}</span><span class="tag ${tone}">${e.category}</span></div><p class="es">${e.summary}</p><a href="${e.url}" target="_blank" rel="noopener">${e.outlet}</a></li>`;
+  }).join('');
+  const n=(f.events||[]).length;
+  return `<div class="fac ${closed?'is-closed':'is-watch'}"><div class="fac-head">${kick}<h3 class="nm">${f.name}</h3>`
+    +`<div class="loc">${f.city}, ${f.state}<span class="ty">${f.type}</span></div></div>`
+    +`<div class="fac-body">${body}${pull}<div class="sec">Chronology<span class="sc">${n} event${n===1?'':'s'}</span></div>`
+    +`<ul class="chron">${evs||'<li class="ev-none">No itemized events.</li>'}</ul></div></div>`;
+}
+function openFac(m,f){
+  if(!m.getPopup()) m.bindPopup(facHTML(f),Object.assign({className:'fac-popup '+(f.status==='watch'?'watch':'closed')},POPUP_OPTS));
+  m.openPopup();
+}
+</script>
+</body>
+</html>
